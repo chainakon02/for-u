@@ -64,7 +64,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
           <div class="side front cover-front pink-cover">
             <div class="cover-titles">
               <h1 class="main-title">For You</h1>
-              <p class="sub-title">ขอให้เป็นวันที่ดีนะ</p>
+              <p class="sub-title">สำหรับคุณ</p>
             </div>
             <img src="/cat4.png" alt="Cat Cover" class="cover-cat-image-small" />
           </div>
