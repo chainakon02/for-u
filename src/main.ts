@@ -1,186 +1,656 @@
-import './style.css'
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
-document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-  <div class="book-scene">
-    
-    <!-- Swipe animation hint -->
-    <div id="swipe-hint" class="swipe-hint">
-      <div class="hand-icon">👆</div>
-    </div>
+body {
+  font-family: 'Prompt', 'Kanit', sans-serif;
+  background: #f0f0f0;
+  margin: 0;
+  overflow: hidden;
+}
 
-    <div class="book" id="book">
-      
-      <!-- Leaf 3 (Page 4 and Back Cover) -->
-      <div class="leaf leaf-3" id="leaf-3">
-        <!-- Front side of Leaf 3 (Right Page 4) -->
-        <div class="side front right-page">
-          <div class="page-content right-content">
-            <h2 class="chapter-title" style="color: #ccc; font-weight: 400;">Page 4</h2>
-            <span class="page-number">4.</span>
-          </div>
-        </div>
-        <!-- Back side of Leaf 3 (Back Cover) -->
-        <div class="side back cover-back">
-          <div class="page-content">
-            <!-- Empty back cover -->
-          </div>
-        </div>
-      </div>
+#app {
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+  z-index: 1;
+}
 
-      <!-- Leaf 2 (Yellow Page and Page 3) -->
-      <div class="leaf leaf-2" id="leaf-2">
-        <!-- Front side of Leaf 2 (Yellow Page 2) -->
-        <div class="side front right-page yellow-chapter-page">
-          <div class="cover-content">
-            <div class="custom-title-layout">
-              <div class="title-line-1">ขอให้</div>
-              <div class="title-line-2">วันนี้</div>
-              <div class="title-line-3">
-                <span class="text-small-part">เป็น</span>
-                <span class="text-large-part">วันที่ดี</span>
-                <span class="text-small-part" style="margin-left: 8px; margin-right: 0;">น๊าา</span>
-              </div>
-            </div>
-            
-            <div class="cover-author-section" style="border-bottom-width: 20px; color: transparent;">
-              <div class="cover-illustration">
-                 <div class="chair"></div>
-                 <div class="person"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <!-- Back side of Leaf 2 (Left Page 3) -->
-        <div class="side back left-page">
-          <div class="page-content left-content">
-          </div>
-        </div>
-      </div>
+.book-scene {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  perspective: 1800px;
+}
 
-      <!-- Leaf 1 (Cover and Chapter 1) -->
-      <div class="leaf cover-wrapper leaf-1" id="leaf-1">
-        <div class="leaf-inner" id="cover">
-          
-          <!-- Front Cover -->
-          <div class="side front cover-front pink-cover">
-            <div class="cover-titles">
-              <h1 class="main-title">For You</h1>
-              <p class="sub-title">ขอให้เป็นวันที่ดีนะ</p>
-            </div>
-            <img src="/cat4.png" alt="Cat Cover" class="cover-cat-image-small" />
-          </div>
+.book {
+  --book-scale: 1;
+  position: relative;
+  width: 450px;
+  height: 600px;
+  transform-style: preserve-3d;
+  /* เอียงหนังสือไปด้านหลัง 20 องศาให้นอนลง */
+  transform: scale(var(--book-scale)) rotateX(20deg);
+  transition: transform 0.8s cubic-bezier(0.645, 0.045, 0.355, 1);
+  /* Realistic book shadow on the desk */
+  filter: drop-shadow(0 35px 40px rgba(0, 0, 0, 0.35)) drop-shadow(0 15px 15px rgba(0, 0, 0, 0.15));
+}
 
-          <!-- Back of Cover (Left Page 1) -->
-          <div class="side back cover-back">
-            <div class="page-content left-content" style="background-image: none;">
-              <h2 class="chapter-title" style="margin-top: 20px;">Chapter 1</h2>
-              <div class="chapter-image-container">
-                <img src="/cat_chapter1.png" alt="Cat holding flower" class="chapter-cat-image" />
-              </div>
-              <span class="page-number" style="left: 50px;">1.</span>
-            </div>
-          </div>
+.book.open {
+  transform: scale(var(--book-scale)) translateX(225px) rotateX(20deg);
+}
 
-        </div>
-      </div>
+/* --- Page thickness effect (stacked pages on the right edge) --- */
+.book::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  right: -6px;
+  width: 6px;
+  height: calc(100% - 16px);
+  background: linear-gradient(to right,
+      #e8e4de 0%,
+      #f0ece6 20%,
+      #e0dcd6 40%,
+      #ebe7e1 60%,
+      #ddd9d3 80%,
+      #d5d1cb 100%);
+  border-radius: 0 2px 2px 0;
+  z-index: 0;
+  transition: opacity 0.8s;
+}
 
-    </div>
-  </div>
-`
+.book.open::before {
+  opacity: 0.5;
+}
 
-let currentLeaf = 0;
-const totalLeaves = 3;
+.leaf {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+}
 
-const book = document.getElementById('book')!;
-const swipeHint = document.getElementById('swipe-hint')!;
+/* Base styling for sides and pages */
+.side {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  border-radius: 4px 12px 12px 4px;
+  /* Realistic paper color with very slight warmth */
+  background-color: #FDFBF7;
+}
 
-// Hide hint on any interaction
-const hideHint = () => {
-  if (swipeHint.style.display !== 'none') {
-    swipeHint.style.display = 'none';
+/* Realistic paper texture overlay for all pages */
+.side::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background-image:
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0) 40%, rgba(150, 130, 110, 0.25) 120%),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.35'/%3E%3C/svg%3E");
+  box-shadow: inset 0 0 40px rgba(100, 80, 60, 0.15);
+  pointer-events: none;
+  z-index: 50;
+  mix-blend-mode: multiply;
+}
+
+.front {
+  background: linear-gradient(to left,
+      #FDFBF7 0%,
+      #FDFBF7 82%,
+      #e8e4d9 96%,
+      #cfc8ba 100%);
+  transform: translateZ(1px);
+  box-shadow:
+    inset 40px 0 50px rgba(0, 0, 0, 0.03),
+    /* Page curl inner shadow */
+    1px 1px 0 #ece9e1,
+    2px 2px 0 #e0ddd5,
+    3px 3px 0 #d5d2ca,
+    4px 4px 0 #cac7bf,
+    5px 5px 0 #bfbcb4,
+    6px 6px 12px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+}
+
+.back {
+  background: linear-gradient(to right,
+      #FDFBF7 0%,
+      #FDFBF7 82%,
+      #e8e4d9 96%,
+      #cfc8ba 100%);
+  transform: rotateY(180deg) translateZ(1px);
+  box-shadow:
+    inset -40px 0 50px rgba(0, 0, 0, 0.03),
+    /* Page curl inner shadow */
+    -1px 1px 0 #ece9e1,
+    -2px 2px 0 #e0ddd5,
+    -3px 3px 0 #d5d2ca,
+    -4px 4px 0 #cac7bf,
+    -5px 5px 0 #bfbcb4,
+    -6px 6px 12px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+}
+
+/* --- Cover Page --- */
+@keyframes peek-open {
+
+  0%,
+  100% {
+    transform: rotateY(0deg);
   }
-};
 
-const updateBook = () => {
-  if (currentLeaf === 0) {
-    book.classList.remove('open');
-  } else {
-    book.classList.add('open');
+  15% {
+    transform: rotateY(-15deg);
   }
 
-  for (let i = 1; i <= totalLeaves; i++) {
-    const leaf = document.getElementById(`leaf-${i}`)!;
-    const leafInner = i === 1 ? document.getElementById('cover')! : leaf;
-    
-    // Calculate the target z-index based on the stack
-    const targetZIndex = (i <= currentLeaf) 
-      ? totalLeaves + i        // Left stack: totalLeaves + i
-      : totalLeaves - i + 1;   // Right stack: totalLeaves - i + 1
-
-    const currentZIndex = parseInt(leaf.style.zIndex || '0', 10);
-    
-    if (i <= currentLeaf) {
-      leafInner.classList.add('flipped');
-    } else {
-      leafInner.classList.remove('flipped');
-    }
-
-    // Apply z-index logic: immediate if increasing, delayed if decreasing
-    if (targetZIndex >= currentZIndex) {
-      leaf.style.zIndex = String(targetZIndex);
-    } else {
-      // Delay the decrease so the page stays on top while flipping back
-      setTimeout(() => {
-        leaf.style.zIndex = String(targetZIndex);
-      }, 800); // 800ms matches the CSS transition time
-    }
+  30% {
+    transform: rotateY(0deg);
   }
-};
+}
 
-// Pointer events for swipe (mouse & touch)
-let startX = 0;
-let isDragging = false;
+.cover-wrapper {
+  transform-style: preserve-3d;
+  transform-origin: left center;
+  transition: transform 0.4s ease;
+}
 
-book.addEventListener('pointerdown', (e) => {
-  startX = e.clientX;
-  isDragging = true;
-  hideHint();
-});
+.book:not(.open) .cover-wrapper {
+  animation: peek-open 4s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+  animation-delay: 2s;
+}
 
-book.addEventListener('pointerup', (e) => {
-  if (!isDragging) return;
-  isDragging = false;
-  
-  const endX = e.clientX;
-  const threshold = 40; // Pixels needed to register as a swipe
-  
-  if (endX < startX - threshold) {
-    // Swipe left (next page)
-    if (currentLeaf < 2) {
-      currentLeaf++;
-      updateBook();
-    }
-  } else if (endX > startX + threshold) {
-    // Swipe right (previous page)
-    if (currentLeaf > 0) {
-      currentLeaf--;
-      updateBook();
-    }
+.book.open .cover-wrapper {
+  animation: none;
+  transform: rotateY(0deg);
+}
+
+/* Inner leaf or normal leaf */
+.leaf-inner,
+.leaf:not(.cover-wrapper) {
+  transform-style: preserve-3d;
+  transition: transform 0.8s cubic-bezier(0.645, 0.045, 0.355, 1);
+  transform-origin: left center;
+  width: 100%;
+  height: 100%;
+}
+
+.flipped {
+  transform: rotateY(-180deg);
+}
+
+.cover-front {
+  background-color: #F8D974;
+  z-index: 2;
+  overflow: hidden;
+  transform: translateZ(1px);
+  /* Cover has a slightly thicker, harder shadow */
+  box-shadow:
+    2px 2px 0 #c4a03a,
+    3px 3px 0 #b8933a,
+    4px 4px 0 #a8853a,
+    5px 5px 0 #987733,
+    6px 6px 15px rgba(0, 0, 0, 0.15),
+    inset 4px 0 12px rgba(0, 0, 0, 0.1),
+    inset 0 0 60px rgba(0, 0, 0, 0.02);
+}
+
+/* Spine Hinge for Hardcover Realism */
+.cover-front::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 20px;
+  bottom: 0;
+  width: 12px;
+  background: linear-gradient(to right,
+      rgba(0, 0, 0, 0.0) 0%,
+      rgba(0, 0, 0, 0.15) 30%,
+      rgba(255, 255, 255, 0.15) 50%,
+      rgba(0, 0, 0, 0.1) 70%,
+      rgba(0, 0, 0, 0.0) 100%);
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* Keep paper texture on cover */
+
+.cover-back {
+  background: linear-gradient(to right,
+      #FDFBF7 0%,
+      #FDFBF7 75%,
+      #F8F6F0 90%,
+      #F0EDE5 97%,
+      #E5E2DA 100%);
+  transform: rotateY(180deg) translateZ(1px);
+  z-index: 1;
+  box-shadow:
+    -1px 1px 0 #ece9e1,
+    -2px 2px 0 #e0ddd5,
+    -3px 3px 0 #d5d2ca,
+    -4px 4px 0 #cac7bf,
+    -5px 5px 0 #bfbcb4,
+    -6px 6px 12px rgba(0, 0, 0, 0.08),
+    inset -3px 0 8px rgba(0, 0, 0, 0.03);
+}
+
+/* Center binding crease / string */
+.book::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 0;
+  width: 14px;
+  background: linear-gradient(to right,
+      rgba(0, 0, 0, 0.2) 0%,
+      rgba(0, 0, 0, 0.05) 20%,
+      rgba(255, 255, 255, 0.4) 50%,
+      rgba(0, 0, 0, 0.05) 80%,
+      rgba(0, 0, 0, 0.25) 100%);
+  transform: translateX(-50%);
+  box-shadow:
+    0 0 25px rgba(0, 0, 0, 0.1),
+    inset 0 0 5px rgba(0, 0, 0, 0.15);
+  opacity: 0;
+  transition: opacity 0.8s;
+  z-index: 10;
+  border-radius: 2px;
+}
+
+.book.open::after {
+  opacity: 1;
+}
+
+/* --- Content Styling --- */
+.page-content {
+  padding: 60px 50px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 1;
+  /* Above paper texture */
+}
+
+.left-content {
+  align-items: flex-start;
+  /* Notebook ruled lines with red margin */
+  background-image:
+    linear-gradient(to right, transparent 35px, rgba(220, 100, 100, 0.3) 35px, rgba(220, 100, 100, 0.3) 36px, transparent 36px),
+    repeating-linear-gradient(transparent, transparent 35px, rgba(0, 0, 0, 0.06) 35px, rgba(0, 0, 0, 0.06) 36px);
+  background-position: 0 0, 0 60px;
+}
+
+.right-content {
+  justify-content: center;
+  align-items: flex-start;
+  padding-left: 70px;
+  /* Notebook ruled lines with red margin (adjusted for spine) */
+  background-image:
+    linear-gradient(to right, transparent 55px, rgba(220, 100, 100, 0.3) 55px, rgba(220, 100, 100, 0.3) 56px, transparent 56px),
+    repeating-linear-gradient(transparent, transparent 35px, rgba(0, 0, 0, 0.06) 35px, rgba(0, 0, 0, 0.06) 36px);
+  background-position: 0 0, 0 60px;
+}
+
+.chapter-title {
+  font-size: 26px;
+  font-weight: 700;
+  color: #111;
+  letter-spacing: 0.5px;
+}
+
+.page-number {
+  position: absolute;
+  bottom: 40px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #999;
+  font-style: italic;
+}
+
+.left-content .page-number {
+  left: 50px;
+}
+
+.right-content .page-number {
+  right: 50px;
+}
+
+.text-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  transform: translateY(-20px);
+}
+
+.text-small {
+  font-size: 28px;
+  font-weight: 500;
+  color: #222;
+}
+
+.text-large {
+  font-size: 72px;
+  font-weight: 700;
+  color: #111;
+  line-height: 1;
+  letter-spacing: -1px;
+}
+
+.text-medium {
+  font-size: 38px;
+  font-weight: 500;
+  color: #222;
+}
+
+/* --- Front Cover Styling (from Image 1) --- */
+.cover-content {
+  height: 100%;
+  padding: 50px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 1;
+}
+
+.cover-logo {
+  position: absolute;
+  top: 30px;
+  right: 30px;
+  width: 40px;
+  height: 40px;
+  background: #111;
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.custom-title-layout {
+  margin-top: 50px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  color: #2e2e2e;
+  font-family: 'Prompt', sans-serif;
+  gap: 12px;
+}
+
+
+.title-line-1 {
+  font-size: 44px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -1px;
+}
+
+.title-line-2 {
+  font-size: 84px;
+  font-weight: 500;
+  line-height: 1.05;
+  letter-spacing: -2px;
+}
+
+.title-line-3 {
+  display: flex;
+  align-items: baseline;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.text-small-part {
+  font-size: 36px;
+  font-weight: 400;
+  letter-spacing: -1px;
+  margin-right: 8px;
+}
+
+.text-large-part {
+  font-size: 72px;
+  font-weight: 500;
+  letter-spacing: -2px;
+}
+
+.cover-author-section {
+  margin-top: auto;
+  margin-bottom: 30px;
+  border-bottom: 20px solid #5785AC;
+  position: relative;
+  padding-bottom: 20px;
+}
+
+
+.cover-author {
+  font-size: 18px;
+  font-weight: 500;
+  color: #111;
+}
+
+.cover-footer {
+  margin-top: 20px;
+  font-size: 12px;
+  color: #444;
+  line-height: 1.6;
+  position: relative;
+}
+
+.print-version {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  font-size: 12px;
+}
+
+/* --- Swipe Hint Animation --- */
+.swipe-hint {
+  position: absolute;
+  top: 60%;
+  left: 65%;
+  font-size: 50px;
+  z-index: 1000;
+  pointer-events: none;
+  /* Let clicks pass through */
+  animation: swipe-animation 2.5s ease-in-out forwards;
+  animation-delay: 1s;
+  /* Wait 1s before showing */
+  opacity: 0;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+}
+
+@keyframes swipe-animation {
+  0% {
+    opacity: 0;
+    transform: translate(30px, 0) scale(1.2);
   }
-});
 
-// Click to turn pages (fallback to clicking specific pages)
-document.getElementById('leaf-1')?.addEventListener('click', (e) => {
-  if (isDragging && Math.abs(startX - e.clientX) > 10) return; // Ignore click if it was a drag
-  if (currentLeaf === 0) { currentLeaf = 1; updateBook(); }
-  else if (currentLeaf === 1) { currentLeaf = 0; updateBook(); }
-});
-document.getElementById('leaf-2')?.addEventListener('click', (e) => {
-  if (isDragging && Math.abs(startX - e.clientX) > 10) return;
-  if (currentLeaf === 1) { currentLeaf = 2; updateBook(); }
-  else if (currentLeaf === 2) { currentLeaf = 1; updateBook(); }
-});
-// leaf-3 ไม่สามารถคลิกเปิดต่อไปได้แล้ว (หยุดที่หน้า 3-4)
+  15% {
+    opacity: 1;
+    transform: translate(30px, 0) scale(1);
+  }
 
-// Initialize
-updateBook();
+  60% {
+    opacity: 1;
+    transform: translate(-100px, 0) scale(1);
+  }
+
+  85% {
+    opacity: 0;
+    transform: translate(-130px, 0) scale(0.9);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-130px, 0) scale(0.9);
+  }
+}
+
+.yellow-chapter-page {
+  background: linear-gradient(to left,
+      #F8D974 0%,
+      #F8D974 75%,
+      #e8c85e 92%,
+      #d8b84a 100%) !important;
+  overflow: hidden;
+}
+
+/* No paper texture on yellow page */
+.yellow-chapter-page::before {
+  display: none;
+}
+
+.pink-cover {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.cover-titles {
+  padding-top: 50px;
+  width: 100%;
+  text-align: center;
+  z-index: 10;
+}
+
+.main-title {
+  font-family: 'Prompt', sans-serif;
+  font-size: 60px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 2px;
+  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.15);
+  margin-bottom: 5px;
+}
+
+.sub-title {
+  font-size: 18px;
+  font-weight: 500;
+  color: #ffffff;
+  text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.15);
+  position: absolute;
+  bottom: 40px;
+  width: 100%;
+  text-align: center;
+  z-index: 10;
+  left: 0;
+  margin: 0;
+  padding-left: 5%;
+
+}
+
+.cover-cat-image-small {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center bottom;
+  z-index: 1;
+  border-radius: 4px 12px 12px 4px;
+  transform: translate(15px, 60px) scale(1.2);
+}
+
+.chapter-image-container {
+  width: 280px;
+  height: 280px;
+  margin-top: 40px;
+  align-self: center;
+  border-radius: 50%;
+  /* Creates a soft blurry/feathered edge circle */
+  -webkit-mask-image: radial-gradient(circle, black 40%, rgba(0, 0, 0, 0) 70%);
+  mask-image: radial-gradient(circle, black 40%, rgba(0, 0, 0, 0) 70%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  z-index: 10;
+}
+
+.chapter-cat-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Adjust center to focus exactly on the cat holding the flower */
+  object-position: center 50%;
+}
+
+/* --- Responsive Book Scaling --- */
+@media (max-width: 1200px) {
+  .book {
+    --book-scale: 0.85;
+  }
+}
+
+@media (max-width: 1024px) {
+  .book {
+    --book-scale: 0.75;
+  }
+}
+
+@media (max-width: 768px) {
+  .book {
+    --book-scale: 0.6;
+  }
+}
+
+@media (max-width: 600px) {
+  .book {
+    --book-scale: 0.48;
+  }
+}
+
+@media (max-width: 480px) {
+  .book {
+    --book-scale: 0.46;
+  }
+}
+
+@media (max-width: 400px) {
+  .book {
+    --book-scale: 0.39;
+  }
+}
+
+@media (max-width: 350px) {
+  .book {
+    --book-scale: 0.3;
+  }
+}
+
+/* Height-based scaling to ensure it fits in landscape mode */
+@media (max-height: 800px) and (min-width: 768px) {
+  .book {
+    --book-scale: 0.65;
+  }
+}
+
+@media (max-height: 600px) {
+  .book {
+    --book-scale: 0.45;
+  }
+}
+
+@media (max-height: 450px) {
+  .book {
+    --book-scale: 0.35;
+  }
+}
