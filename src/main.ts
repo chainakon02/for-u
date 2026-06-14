@@ -1,7 +1,19 @@
 import './style.css'
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-  <div class="book-scene">
+  <div id="countdown-overlay" class="countdown-overlay">
+    <div class="countdown-content">
+     
+     
+      <div id="countdown" class="countdown-timer-large">
+        <div class="time-block-large"><span id="cd-hours">00</span><span class="time-label-large">ชม.</span></div>
+        <div class="time-block-large"><span id="cd-minutes">00</span><span class="time-label-large">นาที</span></div>
+        <div class="time-block-large"><span id="cd-seconds">00</span><span class="time-label-large">วินาที</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="book-scene" id="book-scene" style="display: none; opacity: 0; transition: opacity 2s ease;">
     
     <!-- Swipe animation hint -->
     <div id="swipe-hint" class="swipe-hint">
@@ -152,6 +164,60 @@ book.addEventListener('pointerdown', (e) => {
   isDragging = true;
   hideHint();
 });
+
+// Countdown Timer Logic
+function initCountdown() {
+  // Target: June 15, 2026, 06:00:00 (Thailand time GMT+7)
+  const targetDate = new Date('2026-06-15T01:00:00+07:00').getTime();
+
+
+
+  const hoursEl = document.getElementById('cd-hours');
+  const minutesEl = document.getElementById('cd-minutes');
+  const secondsEl = document.getElementById('cd-seconds');
+
+  if (!hoursEl || !minutesEl || !secondsEl) return;
+
+  const timer = setInterval(() => {
+    const now = new Date().getTime();
+    const distance = targetDate - now;
+
+    if (distance < 0) {
+      clearInterval(timer);
+      hoursEl.innerText = '00';
+      minutesEl.innerText = '00';
+      secondsEl.innerText = '00';
+
+      const overlayEl = document.getElementById('countdown-overlay');
+      const sceneEl = document.getElementById('book-scene');
+
+      if (overlayEl) {
+        overlayEl.style.opacity = '0';
+        setTimeout(() => overlayEl.remove(), 1000);
+      }
+
+      if (sceneEl) {
+        sceneEl.style.display = 'flex';
+        // Force reflow
+        void sceneEl.offsetWidth;
+        sceneEl.style.opacity = '1';
+      }
+
+      return;
+    }
+
+    const hours = Math.floor(distance / (1000 * 60 * 60));
+    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+    hoursEl.innerText = hours.toString().padStart(2, '0');
+    minutesEl.innerText = minutes.toString().padStart(2, '0');
+    secondsEl.innerText = seconds.toString().padStart(2, '0');
+  }, 1000);
+}
+
+// Start the countdown
+initCountdown();
 
 book.addEventListener('pointerup', (e) => {
   if (!isDragging) return;
