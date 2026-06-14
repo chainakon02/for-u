@@ -28,12 +28,13 @@ body {
 }
 
 .book {
+  --book-scale: 1;
   position: relative;
   width: 450px;
   height: 600px;
   transform-style: preserve-3d;
   /* เอียงหนังสือไปด้านหลัง 20 องศาให้นอนลง */
-  transform: rotateX(20deg);
+  transform: scale(var(--book-scale)) rotateX(20deg);
   transition: transform 0.8s cubic-bezier(0.645, 0.045, 0.355, 1);
   /* Realistic book shadow on the desk */
   filter: drop-shadow(0 35px 40px rgba(0, 0, 0, 0.35))
@@ -41,7 +42,7 @@ body {
 }
 
 .book.open {
-  transform: translateX(225px) rotateX(20deg);
+  transform: scale(var(--book-scale)) translateX(225px) rotateX(20deg);
 }
 
 /* --- Page thickness effect (stacked pages on the right edge) --- */
@@ -579,3 +580,17 @@ body {
   /* Adjust center to focus exactly on the cat holding the flower */
   object-position: center 50%;
 }
+
+/* --- Responsive Book Scaling --- */
+@media (max-width: 1200px) { .book { --book-scale: 0.85; } }
+@media (max-width: 1024px) { .book { --book-scale: 0.75; } }
+@media (max-width: 768px) { .book { --book-scale: 0.6; } }
+@media (max-width: 600px) { .book { --book-scale: 0.48; } }
+@media (max-width: 480px) { .book { --book-scale: 0.4; } }
+@media (max-width: 400px) { .book { --book-scale: 0.35; } }
+@media (max-width: 350px) { .book { --book-scale: 0.3; } }
+
+/* Height-based scaling to ensure it fits in landscape mode */
+@media (max-height: 800px) and (min-width: 768px) { .book { --book-scale: 0.65; } }
+@media (max-height: 600px) { .book { --book-scale: 0.45; } }
+@media (max-height: 450px) { .book { --book-scale: 0.35; } }
