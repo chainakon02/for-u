@@ -168,7 +168,7 @@ book.addEventListener('pointerdown', (e) => {
 // Countdown Timer Logic
 function initCountdown() {
   // Target: June 15, 2026, 06:00:00 (Thailand time GMT+7)
-  const targetDate = new Date('2026-06-15T01:00:00+07:00').getTime();
+  const targetDate = new Date('2026-06-15T01:20:00+07:00').getTime();
 
 
 
