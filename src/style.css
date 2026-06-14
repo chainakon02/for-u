@@ -414,17 +414,18 @@ body {
   display: flex;
   align-items: baseline;
   line-height: 1.1;
+  white-space: nowrap;
 }
 
 .text-small-part {
-  font-size: 46px;
+  font-size: 42px;
   font-weight: 400;
   letter-spacing: -1px;
   margin-right: 8px;
 }
 
 .text-large-part {
-  font-size: 100px;
+  font-size: 85px;
   font-weight: 500;
   letter-spacing: -2px;
 }
@@ -616,7 +617,7 @@ body {
 
 @media (max-width: 400px) {
   .book {
-    --book-scale: 0.44;
+    --book-scale: 0.39;
   }
 }
 
