@@ -616,7 +616,7 @@ body {
 
 @media (max-width: 400px) {
   .book {
-    --book-scale: 0.39;
+    --book-scale: 0.41;
   }
 }
 
