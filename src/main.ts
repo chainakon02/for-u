@@ -38,6 +38,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
               <div class="title-line-3">
                 <span class="text-small-part">เป็น</span>
                 <span class="text-large-part">วันที่ดี</span>
+                <span class="text-small-part" style="margin-left: 8px; margin-right: 0;">น๊าา</span>
               </div>
             </div>
             
